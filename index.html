@@ -1,0 +1,1896 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Tiny Neural Network Studio v2: Training Lab</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --card:#121a33;
+      --ink:#e7ecff;
+      --muted:#b9c2ff;
+      --accent:#7cf6ff;
+      --accent2:#b8ff7c;
+      --warn:#ffcc66;
+      --bad:#ff6b8a;
+      --good:#8dffb5;
+      --line:rgba(231,236,255,0.14);
+      --soft:rgba(231,236,255,0.08);
+      --shadow:0 16px 50px rgba(0,0,0,0.40);
+      --r:18px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      color:var(--ink);
+      background:
+        radial-gradient(900px 520px at 15% 15%, rgba(124,246,255,0.09), transparent 70%),
+        radial-gradient(800px 520px at 80% 25%, rgba(184,255,124,0.07), transparent 70%),
+        linear-gradient(180deg, #070b17, var(--bg));
+      min-height:100vh;
+    }
+    header{
+      position:sticky; top:0; z-index:20;
+      display:flex; gap:14px; align-items:center; justify-content:space-between;
+      padding:16px 16px 10px 16px;
+      border-bottom:1px solid rgba(231,236,255,0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.04), transparent);
+      backdrop-filter: blur(8px);
+    }
+    .brand{display:flex; gap:12px; align-items:center;}
+    .logo{
+      width:38px; height:38px; border-radius:12px;
+      background: linear-gradient(140deg, rgba(124,246,255,0.95), rgba(184,255,124,0.85));
+      box-shadow: 0 10px 30px rgba(124,246,255,0.14);
+      position:relative; overflow:hidden;
+    }
+    .logo:before{
+      content:""; position:absolute; inset:-40%;
+      background: repeating-linear-gradient(90deg, rgba(11,16,32,0.25) 0 9px, transparent 9px 18px);
+      transform: rotate(18deg);
+    }
+    h1{margin:0; font-size:16px; letter-spacing:0.2px;}
+    .sub{margin-top:2px; font-size:12px; color:var(--muted);}
+    .pill{
+      display:flex; gap:8px; align-items:center;
+      padding:8px 10px; border-radius:999px;
+      border:1px solid rgba(231,236,255,0.14);
+      background: rgba(231,236,255,0.06);
+      font-size:12px;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.20);
+      user-select:none;
+    }
+    .pill strong{color:var(--accent)}
+    main{
+      padding:16px;
+      display:grid;
+      grid-template-columns: 380px 1fr 420px;
+      gap:14px;
+      align-items:start;
+    }
+    @media (max-width: 1250px){
+      main{grid-template-columns:1fr;}
+      .svgbox{height:520px;}
+    }
+    .card{
+      border-radius: var(--r);
+      border: 1px solid rgba(231,236,255,0.12);
+      background: linear-gradient(180deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+    }
+    .hd{
+      padding:14px 14px 10px 14px;
+      border-bottom:1px solid rgba(231,236,255,0.08);
+      background:
+        radial-gradient(520px 120px at 20% 0%, rgba(184,255,124,0.08), transparent 60%),
+        linear-gradient(180deg, rgba(124,246,255,0.08), transparent 70%);
+    }
+    .hd h2{margin:0 0 4px 0; font-size:14px; letter-spacing:0.2px;}
+    .hd p{margin:0; font-size:12px; color:var(--muted); line-height:1.45;}
+    .bd{padding:14px;}
+    .row{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+    label{font-size:12px; color:var(--muted); display:flex; gap:8px; align-items:center;}
+    .tag{
+      font-size:11px; padding:4px 8px; border-radius:999px;
+      border:1px solid rgba(231,236,255,0.14);
+      background: rgba(231,236,255,0.06);
+      color: var(--ink);
+      user-select:none;
+    }
+    .value{
+      font-size:12px;
+      padding:6px 8px;
+      border-radius:12px;
+      border:1px solid rgba(231,236,255,0.12);
+      background: rgba(0,0,0,0.14);
+      min-width:86px;
+      text-align:center;
+      font-variant-numeric: tabular-nums;
+    }
+    input[type="range"]{width:100%; accent-color: var(--accent);}
+    .group{padding-bottom:12px; margin-bottom:12px; border-bottom:1px solid rgba(231,236,255,0.07);}
+    .hint{font-size:12px; color:var(--muted); line-height:1.5;}
+    .buttons{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px;}
+    button{
+      font-size:12px;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(231,236,255,0.14);
+      background: rgba(231,236,255,0.07);
+      color:var(--ink);
+      cursor:pointer;
+      transition: transform 120ms ease, background 120ms ease;
+      user-select:none;
+    }
+    button:hover{transform: translateY(-1px); background: rgba(231,236,255,0.10);}
+    button:disabled{opacity:0.45; cursor:not-allowed; transform:none;}
+    button.primary{
+      border-color: rgba(124,246,255,0.30);
+      background: linear-gradient(140deg, rgba(124,246,255,0.20), rgba(184,255,124,0.16));
+    }
+    button.danger{
+      border-color: rgba(255,107,138,0.30);
+      background: linear-gradient(140deg, rgba(255,107,138,0.18), rgba(255,204,102,0.08));
+    }
+    .toggle{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(231,236,255,0.10);
+      background: rgba(0,0,0,0.14);
+    }
+    .toggle input{transform: scale(1.1);}
+    .svgbox{
+      height:560px;
+      border-radius: var(--r);
+      border:1px solid rgba(231,236,255,0.12);
+      background:
+        linear-gradient(transparent 0 23px, rgba(124,246,255,0.08) 23px 24px, transparent 24px) 0 0/24px 24px,
+        linear-gradient(90deg, transparent 0 23px, rgba(124,246,255,0.08) 23px 24px, transparent 24px) 0 0/24px 24px,
+        radial-gradient(760px 400px at 30% 15%, rgba(124,246,255,0.12), transparent 65%),
+        radial-gradient(760px 400px at 70% 75%, rgba(184,255,124,0.10), transparent 65%),
+        linear-gradient(180deg, rgba(8,12,26,0.92), rgba(8,12,26,0.40));
+      overflow:hidden;
+      position:relative;
+    }
+    .legend{display:flex; gap:12px; flex-wrap:wrap; justify-content:space-between; margin-bottom:10px;}
+    .chip{display:flex; gap:8px; align-items:center; font-size:12px; color:var(--muted);}
+    .sw{width:12px; height:12px; border-radius:4px; background:var(--accent); box-shadow:0 0 0 3px rgba(124,246,255,0.12);}
+    .sw.neg{background:var(--bad); box-shadow:0 0 0 3px rgba(255,107,138,0.12);}
+    .sw.mag{background:var(--warn); box-shadow:0 0 0 3px rgba(255,204,102,0.12);}
+    .foot{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      margin-top:10px; color:var(--muted); font-size:12px;
+    }
+    .meter{
+      width:260px; height:14px; border-radius:999px;
+      border:1px solid rgba(231,236,255,0.14);
+      background: rgba(231,236,255,0.08);
+      overflow:hidden;
+    }
+    .meter > div{
+      height:100%; width:50%;
+      background: linear-gradient(90deg, rgba(124,246,255,0.85), rgba(184,255,124,0.85));
+      transition: width 180ms ease;
+    }
+    .tabs{display:flex; gap:8px; margin-bottom:12px;}
+    .tab{
+      flex:1;
+      padding:10px 10px;
+      border-radius:14px;
+      border:1px solid rgba(231,236,255,0.14);
+      background: rgba(0,0,0,0.14);
+      font-size:12px;
+      color:var(--muted);
+      cursor:pointer;
+      user-select:none;
+      text-align:center;
+    }
+    .tab.active{
+      color:var(--ink);
+      border-color: rgba(124,246,255,0.30);
+      background: linear-gradient(140deg, rgba(124,246,255,0.18), rgba(184,255,124,0.12));
+    }
+    .pane{display:none;}
+    .pane.active{display:block;}
+    .callout{
+      padding:12px;
+      border-radius:16px;
+      border:1px solid rgba(231,236,255,0.12);
+      background: rgba(0,0,0,0.14);
+      margin-bottom:10px;
+    }
+    .callout h3{margin:0 0 6px 0; font-size:13px;}
+    .callout p{margin:0; font-size:12px; color:var(--muted); line-height:1.5;}
+    textarea{
+      width:100%;
+      min-height:140px;
+      resize:vertical;
+      padding:10px;
+      border-radius:16px;
+      border:1px solid rgba(231,236,255,0.14);
+      background: rgba(0,0,0,0.16);
+      color:var(--ink);
+      font-size:12px;
+      line-height:1.45;
+      outline:none;
+    }
+    .trainGrid{display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;}
+    @media (max-width: 1250px){ .trainGrid{grid-template-columns:1fr;} 
+    .ragGrid{display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-top:10px;}
+    @media (max-width: 1250px){ .ragGrid{grid-template-columns:1fr;} }
+    input.text{
+      width:100%;
+      padding:10px 12px;
+      border-radius:14px;
+      border:1px solid rgba(231,236,255,0.12);
+      background: rgba(0,0,0,0.14);
+      color: var(--ink);
+      outline:none;
+    }
+    input.text::placeholder{color:rgba(231,236,255,0.45);}
+    .chunkCard{
+      padding:10px;
+      border-radius:14px;
+      border:1px solid rgba(231,236,255,0.12);
+      background: rgba(0,0,0,0.14);
+      margin-bottom:8px;
+    }
+    .chunkCard .meta{display:flex; justify-content:space-between; gap:10px; font-size:11px; color:var(--muted); margin-bottom:6px;}
+    .chunkCard .src{color:var(--ink);}
+    .chunkCard .score{font-variant-numeric:tabular-nums;}
+    .chunkCard .txt{font-size:12px; color:rgba(231,236,255,0.82); line-height:1.35;}
+}
+    canvas{
+      width:100%;
+      height:160px;
+      border-radius:16px;
+      border:1px solid rgba(231,236,255,0.12);
+      background: rgba(0,0,0,0.14);
+    }
+    .log{
+      max-height:160px;
+      overflow:auto;
+      padding:10px;
+      border-radius:16px;
+      border:1px solid rgba(231,236,255,0.12);
+      background: rgba(0,0,0,0.14);
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.45;
+      white-space:pre-wrap;
+    }
+    .acc{
+      border-radius:16px;
+      border:1px solid rgba(231,236,255,0.12);
+      background: rgba(0,0,0,0.12);
+      overflow:hidden;
+      margin-bottom:10px;
+    }
+    .accHd{
+      padding:10px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      cursor:pointer;
+      user-select:none;
+      border-bottom:1px solid rgba(231,236,255,0.06);
+    }
+    .accHd .ttl{font-size:12px; font-weight:800; color:var(--ink);}
+    .accHd .meta{font-size:11px; color:var(--muted); font-variant-numeric: tabular-nums;}
+    .accBd{display:none; padding:12px;}
+    .acc.open .accBd{display:block;}
+    .miniNote{margin-top:8px; font-size:11px; color:rgba(185,194,255,0.70); line-height:1.45;}
+
+    .kv{
+      display:flex; justify-content:space-between; gap:10px;
+      padding:10px;
+      border-radius:14px;
+      border:1px solid rgba(231,236,255,0.12);
+      background: rgba(231,236,255,0.05);
+      font-size:12px; color:var(--muted);
+      margin-top:8px;
+    }
+    .kv strong{color:var(--ink); font-variant-numeric: tabular-nums;}
+
+    .modal{
+      position:fixed; inset:0;
+      display:none;
+      align-items:center; justify-content:center;
+      padding:16px;
+      background: rgba(0,0,0,0.56);
+      z-index:100;
+    }
+    .modal.show{display:flex;}
+    .mcard{
+      width:min(780px, 100%);
+      border-radius:20px;
+      border:1px solid rgba(231,236,255,0.16);
+      background: linear-gradient(180deg, rgba(18,26,51,0.96), rgba(10,16,35,0.93));
+      box-shadow: 0 18px 60px rgba(0,0,0,0.50);
+      overflow:hidden;
+    }
+    .mhd{
+      padding:14px 14px 10px 14px;
+      border-bottom:1px solid rgba(231,236,255,0.08);
+      display:flex; justify-content:space-between; gap:12px; align-items:flex-start;
+    }
+    .mhd h4{margin:0; font-size:14px;}
+    .mhd p{margin:6px 0 0 0; font-size:12px; color:var(--muted); line-height:1.5;}
+    .close{
+      font-size:12px;
+      padding:8px 10px;
+      border-radius:12px;
+      border:1px solid rgba(231,236,255,0.16);
+      background: rgba(231,236,255,0.08);
+      color:var(--ink);
+      cursor:pointer;
+    }
+    .mbd{
+      padding:14px;
+      display:grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap:12px;
+    }
+    @media (max-width: 820px){ .mbd{grid-template-columns:1fr;} }
+    .box{
+      border-radius:16px;
+      border:1px solid rgba(231,236,255,0.12);
+      background: rgba(0,0,0,0.14);
+      padding:12px;
+      font-size:12px;
+      color:var(--muted);
+      line-height:1.55;
+    }
+    .box strong{color:var(--ink);}
+    .badge{
+      display:flex; gap:8px; align-items:center;
+      padding:10px;
+      border-radius:16px;
+      border:1px solid rgba(231,236,255,0.12);
+      background: rgba(231,236,255,0.06);
+      font-size:12px;
+      color:var(--ink);
+    }
+    .dot{
+      width:10px; height:10px; border-radius:999px;
+      background: var(--accent);
+      box-shadow: 0 0 0 4px rgba(124,246,255,0.10);
+    }
+
+    .node{cursor:pointer;}
+    .link{cursor:pointer;}
+    .label{cursor:pointer; user-select:none;}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="logo" aria-hidden="true"></div>
+      <div>
+        <h1>Tiny Neural Network Studio v2</h1>
+        <div class="sub">Training mode: calibrate weights from your sun and wind labels, then auto-grow critics when needed</div>
+      </div>
+    </div>
+    <div class="pill">
+      <span>Output:</span>
+      <strong id="pillOut">Shading urgency 0.50</strong>
+    </div>
+  </header>
+
+  <main>
+    <!-- LEFT -->
+    <section class="card">
+      <div class="hd">
+        <h2>Controls</h2>
+        <p>Inputs are site conditions. Weights and biases become your learned rubric.</p>
+      </div>
+      <div class="bd">
+        <div class="group">
+          <div class="row">
+            <label for="sun"><span class="tag">Input A</span> Sun intensity</label>
+            <div class="value" id="sunVal">8.0</div>
+          </div>
+          <input id="sun" type="range" min="0" max="10" step="0.1" value="8"/>
+
+          <div class="row" style="margin-top:10px;">
+            <label for="wind"><span class="tag">Input B</span> Wind exposure</label>
+            <div class="value" id="windVal">3.0</div>
+          </div>
+          <input id="wind" type="range" min="0" max="10" step="0.1" value="3"/>
+
+          <div class="buttons">
+            <button class="primary" id="btnHotCalm">Hot and calm</button>
+            <button id="btnMildWindy">Mild and windy</button>
+            <button id="btnCoolWindy">Cool and windy</button>
+            <button id="btnResetInputs">Reset</button>
+          </div>
+
+          <div class="hint" style="margin-top:10px;">
+            Slide inputs to see the live verdict. Training changes weights so the verdict matches your labeled examples.
+          </div>
+        </div>
+
+        <div class="group">
+          <div class="row">
+            <label for="hiddenN"><span class="tag">N</span> Hidden critics</label>
+            <div class="value" id="hiddenNVal">2</div>
+          </div>
+          <input id="hiddenN" type="range" min="1" max="6" step="1" value="2"/>
+
+          <div class="toggle" style="margin-top:10px;">
+            <label for="autoGrow" style="color:var(--ink);">Auto-grow critics during training</label>
+            <input id="autoGrow" type="checkbox" checked/>
+          </div>
+
+          <div class="row" style="margin-top:10px;">
+            <label for="maxN"><span class="tag">max</span> Max critics</label>
+            <div class="value" id="maxNVal">5</div>
+          </div>
+          <input id="maxN" type="range" min="2" max="8" step="1" value="5"/>
+
+          <div class="buttons">
+            <button id="btnAdd">Add critic</button>
+            <button class="danger" id="btnRemove">Remove critic</button>
+            <button id="btnRandom">Randomize weights</button>
+            <button class="primary" id="btnPreset">Teaching preset</button>
+          </div>
+
+          <div class="miniNote">
+            Auto-grow is a teaching simulation. In real work you usually choose the model size first, then train.
+          </div>
+        </div>
+
+        <div class="group" style="border-bottom:none; padding-bottom:0; margin-bottom:0;">
+          <div class="row">
+            <div class="hint"><strong style="color:var(--ink);">Weights and biases</strong> (per critic)</div>
+          </div>
+          <div id="weights"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CENTER -->
+    <section class="card">
+      <div class="hd">
+        <h2>Network diagram</h2>
+        <p>Click nodes and links for pop-up explanations. Line thickness shows weight magnitude.</p>
+      </div>
+      <div class="bd">
+        <div class="legend">
+          <div class="chip"><span class="sw"></span> positive influence</div>
+          <div class="chip"><span class="sw neg"></span> negative influence</div>
+          <div class="chip"><span class="sw mag"></span> thicker means stronger</div>
+        </div>
+
+        <div class="svgbox">
+          <svg id="svg" width="100%" height="100%" viewBox="0 0 900 560" role="img" aria-label="Neural network diagram">
+            <defs>
+              <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+                <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="rgba(0,0,0,0.35)"/>
+              </filter>
+            </defs>
+            <g id="links"></g>
+            <g id="labels"></g>
+            <g id="nodes"></g>
+            <g id="particles"></g>
+          </svg>
+        </div>
+
+        <div class="foot">
+          <div>
+            <div style="margin-bottom:6px;">Design verdict meter</div>
+            <div class="meter"><div id="meterFill"></div></div>
+          </div>
+          <div class="value" id="meterText">0.50</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT -->
+    <section class="card">
+      <div class="hd">
+        <h2>Explain and Train</h2>
+        <p>Training is calibration. Your labels define what the network learns.</p>
+      </div>
+      <div class="bd">
+        <div class="tabs">
+          <div class="tab active" id="tabExplain">Explain</div>
+          <div class="tab" id="tabTrain">Train</div>
+          <div class="tab" id="tabRAG">RAG Lab</div>
+        </div>
+
+        <div class="pane active" id="paneExplain">
+          <div class="callout">
+            <h3>The fixed rule</h3>
+            <p>Each neuron always mixes inputs using weights, adds a bias, then passes through an activation gate. Training does not change the rule. Training changes the numbers.</p>
+          </div>
+          <div class="callout">
+            <h3>Architecture translation</h3>
+            <p>Weights are priorities. Bias is baseline preference. Hidden critics are internal mini rubrics that can form concepts like heat stress, comfort lift, or glare pressure.</p>
+          </div>
+          <div class="callout">
+            <h3>Auto-grow</h3>
+            <p>If loss plateaus, the model might be too small. Auto-grow adds a critic to increase capacity. This is similar to choosing a bigger model when a small one cannot fit the brief.</p>
+          </div>
+          <div class="callout">
+            <h3>Click for details</h3>
+            <p>Click nodes and links to see live values and a built environment analogy.</p>
+          </div>
+        </div>
+
+        <div class="pane" id="paneTrain">
+          <div class="callout">
+            <h3>Dataset</h3>
+            <p>Paste CSV lines as: <strong style="color:var(--ink);">sun, wind, target</strong>. Target is shading urgency from 0 to 1.</p>
+          </div>
+
+          <textarea id="dataText" spellcheck="false" placeholder="Example:
+9,1,0.95
+5,8,0.30
+2,9,0.10"></textarea>
+
+          <div class="buttons">
+            <button class="primary" id="btnLoadData">Load data</button>
+            <button id="btnDefault">Load default set</button>
+            <button id="btnRule">Generate synthetic rule data</button>
+            <button class="danger" id="btnClear">Clear</button>
+          </div>
+
+          <div class="trainGrid">
+            <div>
+              <div class="callout">
+                <h3>Training controls</h3>
+                <p>Train runs gradient descent. It nudges weights to reduce error.</p>
+              </div>
+
+              <div class="row" style="margin-top:10px;">
+                <label for="lr"><span class="tag">η</span> Learning rate</label>
+                <div class="value" id="lrVal">0.20</div>
+              </div>
+              <input id="lr" type="range" min="0.01" max="1.0" step="0.01" value="0.20"/>
+
+              <div class="row" style="margin-top:10px;">
+                <label for="epochs"><span class="tag">E</span> Epochs</label>
+                <div class="value" id="epochsVal">400</div>
+              </div>
+              <input id="epochs" type="range" min="50" max="2000" step="10" value="400"/>
+
+              <div class="toggle" style="margin-top:10px;">
+                <label for="shuffle" style="color:var(--ink);">Shuffle each epoch</label>
+                <input id="shuffle" type="checkbox" checked/>
+              </div>
+
+              <div class="buttons" style="margin-top:10px;">
+                <button class="primary" id="btnTrain">Train</button>
+                <button id="btnStop" disabled>Stop</button>
+                <button id="btnResetW">Reset weights</button>
+              </div>
+
+              <div class="kv"><span>Current loss (MSE)</span><strong id="lossNow">-</strong></div>
+              <div class="kv"><span>Examples loaded</span><strong id="nData">0</strong></div>
+              <div class="kv"><span>Critics used</span><strong id="nCrit">2</strong></div>
+
+              <div class="miniNote">
+                If loss refuses to drop, either the labels are noisy, the model is too small, or the learning rate is too aggressive.
+              </div>
+            </div>
+
+            <div>
+              <div class="callout">
+                <h3>Loss curve</h3>
+                <p>Loss is how wrong we are. Lower is better.</p>
+              </div>
+              <canvas id="lossCanvas" width="640" height="220"></canvas>
+
+              <div class="callout" style="margin-top:10px;">
+                <h3>Training log</h3>
+                <p>Look for plateau messages and critic growth.</p>
+              </div>
+              <div class="log" id="log"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- MODAL -->
+  <div class="modal" id="modal" role="dialog" aria-modal="true">
+    <div class="mcard">
+      <div class="mhd">
+        <div>
+          <h4 id="mTitle">Title</h4>
+          <p id="mSub">Subtitle</p>
+        </div>
+        <button class="close" id="btnClose">Close</button>
+      </div>
+      <div class="mbd">
+        <div class="box" id="mBody"></div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <div class="badge"><span class="dot"></span><span id="mStat1">Live value</span></div>
+          <div class="badge"><span class="dot" style="background:var(--accent2); box-shadow:0 0 0 4px rgba(184,255,124,0.10)"></span><span id="mStat2">Interpretation</span></div>
+          <div class="box"><strong>Studio analogy</strong><br/><span id="mAnalogy"></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  
+
+        <div class="pane" id="paneRAG">
+          <div class="callout">
+            <h3>RAG Lab</h3>
+            <p><strong style="color:var(--ink);">Retrieval-Augmented Generation</strong> answers by first pulling the most relevant references from your library, then writing an output grounded in those sources. No retraining needed.</p>
+          </div>
+
+          <div class="ragGrid">
+            <div>
+              <div class="callout">
+                <h3>Knowledge library</h3>
+                <p>Paste sources using this format: <strong style="color:var(--ink);">SOURCE: Name</strong> then text, separate sources with <strong style="color:var(--ink);">---</strong>. We will chunk them into bite-size cards.</p>
+              </div>
+
+              <textarea id="ragDocs" spellcheck="false" placeholder="SOURCE: SANS 10400-XA (summary)
+Orientation matters. Prioritise solar control for north and west facades in South Africa. Use shading devices and glazing ratios to reduce unwanted gains.
+---
+SOURCE: Climate notes (Pretoria)
+Hot summers, cool dry winters. Afternoon sun on west facades can cause overheating.
+---"></textarea>
+
+              <div class="buttons">
+                <button class="primary" id="btnRagDemo">Load demo library</button>
+                <button id="btnRagBuild">Build library</button>
+                <button class="danger" id="btnRagClear">Clear</button>
+              </div>
+
+              <div class="row" style="margin-top:10px;">
+                <label><span class="tag">N</span> Chunks in library</label>
+                <div class="value" id="ragChunkCount">0</div>
+              </div>
+              <div class="row" style="margin-top:8px;">
+                <label><span class="tag">V</span> Vocabulary size</label>
+                <div class="value" id="ragVocabSize">0</div>
+              </div>
+            </div>
+
+            <div>
+              <div class="callout">
+                <h3>Query and retrieval</h3>
+                <p>Ask a design question. We retrieve top chunks using a simple TF–IDF similarity (no backend). This is the mechanism RAG uses before an LLM writes the answer.</p>
+              </div>
+
+              <input id="ragQuery" class="text" placeholder="Example: Shading strategy for a west facade in Pretoria with strong afternoon sun and wind exposure"/>
+
+              <div class="row" style="margin-top:10px;">
+                <label for="ragTopK"><span class="tag">k</span> Chunks to retrieve</label>
+                <div class="value" id="ragTopKVal">3</div>
+              </div>
+              <input id="ragTopK" type="range" min="1" max="8" step="1" value="3"/>
+
+              <div class="row" style="margin-top:10px;">
+                <label><span class="tag">∎</span> Only answer from sources</label>
+                <div class="value">
+                  <input id="ragStrict" type="checkbox" style="transform:scale(1.2); margin-left:10px;"/>
+                </div>
+              </div>
+
+              <div class="buttons" style="margin-top:10px;">
+                <button class="primary" id="btnRagRetrieve">Retrieve</button>
+              </div>
+
+              <div class="callout" style="margin-top:10px;">
+                <h3>Retrieved chunks</h3>
+                <p style="color:var(--muted); margin:0;">Highest similarity first.</p>
+              </div>
+              <div class="log" id="ragResults"></div>
+            </div>
+
+            <div>
+              <div class="callout">
+                <h3>Grounded output</h3>
+                <p>We generate a <em>grounded</em> answer by stitching together what was retrieved and citing each source. In a “real” RAG system, an LLM would do the writing, but the grounding logic is the same.</p>
+              </div>
+
+              <div class="buttons">
+                <button class="primary" id="btnRagAnswer">Answer</button>
+                <button id="btnRagCritique">Studio critique</button>
+              </div>
+
+              <div class="log" id="ragAnswer"></div>
+            </div>
+          </div>
+        </div>
+
+<script>
+    const $ = (id)=>document.getElementById(id);
+    const clamp = (x,a,b)=>Math.max(a,Math.min(b,x));
+    const fmt = (x)=> (Math.round(x*100)/100).toFixed(2);
+    const fmt1 = (x)=> (Math.round(x*10)/10).toFixed(1);
+    const sigmoid = (x)=> 1/(1+Math.exp(-x));
+
+    function loudness01(x){
+      if (x < 0.25) return "quiet";
+      if (x < 0.55) return "speaking";
+      if (x < 0.80) return "strong opinion";
+      return "shouting";
+    }
+
+    // Modal
+    const modal = $("modal");
+    function showModal({title, sub, bodyHtml, stat1, stat2, analogy}){
+      $("mTitle").textContent = title;
+      $("mSub").textContent = sub;
+      $("mBody").innerHTML = bodyHtml;
+      $("mStat1").textContent = stat1;
+      $("mStat2").textContent = stat2;
+      $("mAnalogy").textContent = analogy;
+      modal.classList.add("show");
+    }
+    function hideModal(){ modal.classList.remove("show"); }
+    $("btnClose").addEventListener("click", hideModal);
+    modal.addEventListener("click", (e)=>{ if(e.target === modal) hideModal(); });
+    window.addEventListener("keydown", (e)=>{ if(e.key === "Escape") hideModal(); });
+
+    // State
+    const S = {
+      sun: 8.0,
+      wind: 3.0,
+      hiddenN: 2,
+      maxN: 5,
+      autoGrow: true,
+      w_in: [],
+      b_h: [],
+      w_out: [],
+      b_out: -0.40,
+      data: [],
+      lr: 0.20,
+      epochs: 400,
+      shuffle: true
+    };
+
+    function initWeights(){
+      S.w_in = []; S.b_h = []; S.w_out = [];
+      for(let i=0;i<S.hiddenN;i++){
+        const j = (Math.random()-0.5)*0.10;
+        S.w_in.push([0.85 - i*0.20 + j, -0.55 - i*0.10 + j]);
+        S.b_h.push(-2.2 + i*0.6 + j);
+        S.w_out.push(1.15 - i*0.12 + j);
+      }
+      S.b_out = -0.40;
+    }
+    initWeights();
+
+    function randomizeWeights(){
+      for(let i=0;i<S.hiddenN;i++){
+        S.w_in[i][0] = (Math.random()-0.5)*1.2;
+        S.w_in[i][1] = (Math.random()-0.5)*1.2;
+        S.b_h[i] = (Math.random()-0.5)*3.0;
+        S.w_out[i] = (Math.random()-0.5)*1.6;
+      }
+      S.b_out = (Math.random()-0.5)*2.0;
+    }
+
+    function teachingPreset(){
+      for(let i=0;i<S.hiddenN;i++){
+        const scale = 1 - i*0.10;
+        S.w_in[i][0] = 0.95*scale;
+        S.w_in[i][1] = -0.75*scale;
+        S.b_h[i] = -2.2 + i*0.55;
+        S.w_out[i] = 1.20 - i*0.18;
+      }
+      S.b_out = -0.40;
+    }
+
+    function addCritic(){
+      if(S.hiddenN >= S.maxN) return false;
+      S.hiddenN += 1;
+      S.w_in.push([(Math.random()-0.5)*0.8, (Math.random()-0.5)*0.8]);
+      S.b_h.push((Math.random()-0.5)*2.0);
+      S.w_out.push((Math.random()-0.5)*1.2);
+      return true;
+    }
+
+    function removeCritic(){
+      if(S.hiddenN <= 1) return false;
+      S.hiddenN -= 1;
+      S.w_in.pop(); S.b_h.pop(); S.w_out.pop();
+      return true;
+    }
+
+    // Forward
+    function forward(sun, wind){
+      const zH = new Array(S.hiddenN);
+      const aH = new Array(S.hiddenN);
+      for(let i=0;i<S.hiddenN;i++){
+        const z = sun*S.w_in[i][0] + wind*S.w_in[i][1] + S.b_h[i];
+        zH[i] = z;
+        aH[i] = sigmoid(z);
+      }
+      let zO = S.b_out;
+      for(let i=0;i<S.hiddenN;i++) zO += aH[i]*S.w_out[i];
+      const y = sigmoid(zO);
+      return {zH, aH, zO, y};
+    }
+
+    function mse(data){
+      if(!data.length) return NaN;
+      let sum = 0;
+      for(const ex of data){
+        const y = forward(ex.sun, ex.wind).y;
+        const e = y - ex.target;
+        sum += e*e;
+      }
+      return sum / data.length;
+    }
+
+    // UI build: weights
+    function makeAcc(title, meta, openByDefault){
+      const acc = document.createElement("div");
+      acc.className = "acc" + (openByDefault ? " open" : "");
+      const hd = document.createElement("div");
+      hd.className = "accHd";
+      hd.innerHTML = `<div class="ttl">${title}</div><div class="meta">${meta}</div>`;
+      hd.addEventListener("click", ()=> acc.classList.toggle("open"));
+      const bd = document.createElement("div");
+      bd.className = "accBd";
+      acc.appendChild(hd);
+      acc.appendChild(bd);
+      return {acc, bd};
+    }
+
+    function sliderRow(labelHtml, valText){
+      const r = document.createElement("div");
+      r.className = "row";
+      const lab = document.createElement("label");
+      lab.innerHTML = labelHtml;
+      const val = document.createElement("div");
+      val.className = "value";
+      val.textContent = valText;
+      r.appendChild(lab);
+      r.appendChild(val);
+      return {r, val};
+    }
+
+    function buildWeightsUI(){
+      const wrap = $("weights");
+      wrap.innerHTML = "";
+
+      // Output bias
+      {
+        const {acc, bd} = makeAcc("Output neuron", "bias and mixing weights", true);
+        const {r, val} = sliderRow(`<span class="tag">b</span> Output bias`, fmt(S.b_out));
+        const sl = document.createElement("input");
+        sl.type = "range"; sl.min = -6; sl.max = 6; sl.step = 0.01; sl.value = S.b_out;
+        sl.addEventListener("input", ()=>{
+          S.b_out = parseFloat(sl.value);
+          val.textContent = fmt(S.b_out);
+          render();
+        });
+        bd.appendChild(r);
+        bd.appendChild(sl);
+        wrap.appendChild(acc);
+      }
+
+      // Hidden critics
+      for(let i=0;i<S.hiddenN;i++){
+        const lastA = S._last ? fmt(S._last.aH[i]) : "0.00";
+        const {acc, bd} = makeAcc(`Critic ${i+1}`, `activation a=${lastA}`, i < 2);
+
+        const make = (label, min, max, step, getter, setter)=>{
+          const {r, val} = sliderRow(label, fmt(getter()));
+          const sl = document.createElement("input");
+          sl.type="range"; sl.min=min; sl.max=max; sl.step=step; sl.value=getter();
+          sl.addEventListener("input", ()=>{
+            setter(parseFloat(sl.value));
+            val.textContent = fmt(getter());
+            render();
+          });
+          bd.appendChild(r); bd.appendChild(sl);
+        };
+
+        make(`<span class="tag">w</span> Sun → Critic ${i+1}`, -1.5, 1.5, 0.01,
+          ()=>S.w_in[i][0], (v)=>S.w_in[i][0]=v
+        );
+        make(`<span class="tag">w</span> Wind → Critic ${i+1}`, -1.5, 1.5, 0.01,
+          ()=>S.w_in[i][1], (v)=>S.w_in[i][1]=v
+        );
+        make(`<span class="tag">b</span> Bias for Critic ${i+1}`, -6, 6, 0.01,
+          ()=>S.b_h[i], (v)=>S.b_h[i]=v
+        );
+        make(`<span class="tag">w</span> Critic ${i+1} → Output`, -2, 2, 0.01,
+          ()=>S.w_out[i], (v)=>S.w_out[i]=v
+        );
+
+        const note = document.createElement("div");
+        note.className = "miniNote";
+        note.textContent = "Studio translation: this critic is a mini rubric. Training tunes it so it matches your labels.";
+        bd.appendChild(note);
+
+        wrap.appendChild(acc);
+      }
+    }
+
+    // SVG diagram
+    const svg = $("svg");
+    const gLinks = $("links");
+    const gLabels = $("labels");
+    const gNodes = $("nodes");
+    const gParticles = $("particles");
+
+    const layout = { xIn:150, xH:450, xOut:760, yInTop:190, yInBot:390, yOut:290 };
+
+    function linkColor(w){
+      const css = getComputedStyle(document.documentElement);
+      return (w >= 0) ? css.getPropertyValue("--accent").trim() : css.getPropertyValue("--bad").trim();
+    }
+    function linkWidth(w){ return 2 + Math.abs(w)*6; }
+
+    function clearSVG(){
+      gLinks.innerHTML = "";
+      gLabels.innerHTML = "";
+      gNodes.innerHTML = "";
+      gParticles.innerHTML = "";
+    }
+
+    function svgEl(name){ return document.createElementNS("http://www.w3.org/2000/svg", name); }
+
+    function nodeGroup(id, cx, cy, rOuter, rInner, ringFill, ringStroke, title, subtitle, valueText, valueColor){
+      const g = svgEl("g");
+      g.setAttribute("class","node");
+      g.setAttribute("data-id", id);
+
+      const c1 = svgEl("circle");
+      c1.setAttribute("cx",cx); c1.setAttribute("cy",cy); c1.setAttribute("r",rOuter);
+      c1.setAttribute("fill", ringFill);
+      c1.setAttribute("stroke", ringStroke);
+      c1.setAttribute("stroke-width","2");
+      c1.setAttribute("filter","url(#shadow)");
+
+      const c2 = svgEl("circle");
+      c2.setAttribute("cx",cx); c2.setAttribute("cy",cy); c2.setAttribute("r",rInner);
+      c2.setAttribute("fill","rgba(10,16,35,0.58)");
+      c2.setAttribute("stroke","rgba(231,236,255,0.12)");
+      c2.setAttribute("stroke-width","1");
+
+      const t1 = svgEl("text");
+      t1.setAttribute("x",cx); t1.setAttribute("y",cy-10);
+      t1.setAttribute("text-anchor","middle");
+      t1.setAttribute("font-size","12");
+      t1.setAttribute("fill","var(--ink)");
+      t1.setAttribute("font-weight","900");
+      t1.textContent = title;
+
+      const t2 = svgEl("text");
+      t2.setAttribute("x",cx); t2.setAttribute("y",cy+8);
+      t2.setAttribute("text-anchor","middle");
+      t2.setAttribute("font-size","12");
+      t2.setAttribute("fill","var(--muted)");
+      t2.textContent = subtitle;
+
+      const t3 = svgEl("text");
+      t3.setAttribute("x",cx); t3.setAttribute("y",cy+32);
+      t3.setAttribute("text-anchor","middle");
+      t3.setAttribute("font-size","12");
+      t3.setAttribute("fill", valueColor);
+      t3.setAttribute("font-weight","900");
+      t3.setAttribute("data-value","1");
+      t3.textContent = valueText;
+
+      g.appendChild(c1); g.appendChild(c2); g.appendChild(t1); g.appendChild(t2); g.appendChild(t3);
+      return g;
+    }
+
+    function labelText(x,y, txt, id){
+      const t = svgEl("text");
+      t.setAttribute("x",x); t.setAttribute("y",y);
+      t.setAttribute("text-anchor","middle");
+      t.setAttribute("font-size","12");
+      t.setAttribute("fill","var(--muted)");
+      t.setAttribute("class","label");
+      t.setAttribute("data-id", id);
+      t.textContent = txt;
+      return t;
+    }
+
+    function lineEl(x1,y1,x2,y2,w,id){
+      const ln = svgEl("line");
+      ln.setAttribute("x1",x1); ln.setAttribute("y1",y1);
+      ln.setAttribute("x2",x2); ln.setAttribute("y2",y2);
+      ln.setAttribute("stroke", linkColor(w));
+      ln.setAttribute("stroke-width", linkWidth(w));
+      ln.setAttribute("stroke-linecap","round");
+      ln.setAttribute("opacity","0.75");
+      ln.setAttribute("class","link");
+      ln.setAttribute("data-id", id);
+      return ln;
+    }
+
+    function spawnParticle(x1,y1,x2,y2){
+      const c = svgEl("circle");
+      c.setAttribute("cx",x1); c.setAttribute("cy",y1);
+      c.setAttribute("r","4");
+      c.setAttribute("fill","rgba(231,236,255,0.65)");
+      gParticles.appendChild(c);
+
+      const start = performance.now();
+      const dur = 320;
+      function tick(t){
+        const p = clamp((t-start)/dur, 0, 1);
+        c.setAttribute("cx", x1 + (x2-x1)*p);
+        c.setAttribute("cy", y1 + (y2-y1)*p);
+        c.setAttribute("opacity", (1-p).toFixed(2));
+        if(p < 1) requestAnimationFrame(tick);
+        else if(c.parentNode) gParticles.removeChild(c);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function buildDiagram(){
+      clearSVG();
+
+      const sunNode = nodeGroup(
+        "in_sun", layout.xIn, layout.yInTop,
+        46, 38,
+        "rgba(124,246,255,0.18)", "rgba(124,246,255,0.55)",
+        "Input A", "Sun", fmt1(S.sun), "var(--accent)"
+      );
+      const windNode = nodeGroup(
+        "in_wind", layout.xIn, layout.yInBot,
+        46, 38,
+        "rgba(184,255,124,0.16)", "rgba(184,255,124,0.52)",
+        "Input B", "Wind", fmt1(S.wind), "var(--accent2)"
+      );
+
+      const top = 140, bottom = 440;
+      const ys = [];
+      if(S.hiddenN === 1){
+        ys.push((top+bottom)/2);
+      } else {
+        const step = (bottom-top)/(S.hiddenN-1);
+        for(let i=0;i<S.hiddenN;i++) ys.push(top + step*i);
+      }
+      S._ys = ys;
+
+      for(let i=0;i<S.hiddenN;i++){
+        const y = ys[i];
+        const id1 = `L_sun_h_${i}`;
+        const id2 = `L_wind_h_${i}`;
+
+        gLinks.appendChild(lineEl(layout.xIn+22, layout.yInTop, layout.xH-30, y, S.w_in[i][0], id1));
+        gLinks.appendChild(lineEl(layout.xIn+22, layout.yInBot, layout.xH-30, y, S.w_in[i][1], id2));
+
+        gLabels.appendChild(labelText((layout.xIn+layout.xH)/2 - 20, (layout.yInTop+y)/2 - 8, `w=${fmt(S.w_in[i][0])}`, id1));
+        gLabels.appendChild(labelText((layout.xIn+layout.xH)/2 - 20, (layout.yInBot+y)/2 + 16, `w=${fmt(S.w_in[i][1])}`, id2));
+      }
+
+      for(let i=0;i<S.hiddenN;i++){
+        const y = ys[i];
+        const id = `L_h_out_${i}`;
+        gLinks.appendChild(lineEl(layout.xH+30, y, layout.xOut-30, layout.yOut, S.w_out[i], id));
+        gLabels.appendChild(labelText((layout.xH+layout.xOut)/2 + 10, (y+layout.yOut)/2, `w=${fmt(S.w_out[i])}`, id));
+      }
+
+      const hiddenNodes = [];
+      for(let i=0;i<S.hiddenN;i++){
+        const y = ys[i];
+        hiddenNodes.push(nodeGroup(
+          `h_${i}`, layout.xH, y,
+          54, 45,
+          "rgba(255,204,102,0.10)", "rgba(255,204,102,0.48)",
+          `Critic ${i+1}`, "Hidden", "0.00", "var(--warn)"
+        ));
+      }
+
+      const outNode = nodeGroup(
+        "out", layout.xOut, layout.yOut,
+        64, 54,
+        "rgba(231,236,255,0.09)", "rgba(231,236,255,0.18)",
+        "Output", "Shading", "0.50", "var(--good)"
+      );
+
+      gNodes.appendChild(sunNode);
+      gNodes.appendChild(windNode);
+      hiddenNodes.forEach(n=>gNodes.appendChild(n));
+      gNodes.appendChild(outNode);
+    }
+
+    function updateDiagram(last){
+      const sunText = gNodes.querySelector('[data-id="in_sun"] [data-value="1"]');
+      const windText = gNodes.querySelector('[data-id="in_wind"] [data-value="1"]');
+      if(sunText) sunText.textContent = fmt1(S.sun);
+      if(windText) windText.textContent = fmt1(S.wind);
+
+      for(let i=0;i<S.hiddenN;i++){
+        const t = gNodes.querySelector(`[data-id="h_${i}"] [data-value="1"]`);
+        if(t) t.textContent = fmt(last.aH[i]);
+      }
+      const outT = gNodes.querySelector('[data-id="out"] [data-value="1"]');
+      if(outT) outT.textContent = fmt(last.y);
+
+      for(let i=0;i<S.hiddenN;i++){
+        const lineSun = gLinks.querySelector(`[data-id="L_sun_h_${i}"]`);
+        const lineWind = gLinks.querySelector(`[data-id="L_wind_h_${i}"]`);
+        const lineOut = gLinks.querySelector(`[data-id="L_h_out_${i}"]`);
+
+        if(lineSun){ lineSun.setAttribute("stroke", linkColor(S.w_in[i][0])); lineSun.setAttribute("stroke-width", linkWidth(S.w_in[i][0])); }
+        if(lineWind){ lineWind.setAttribute("stroke", linkColor(S.w_in[i][1])); lineWind.setAttribute("stroke-width", linkWidth(S.w_in[i][1])); }
+        if(lineOut){ lineOut.setAttribute("stroke", linkColor(S.w_out[i])); lineOut.setAttribute("stroke-width", linkWidth(S.w_out[i])); }
+
+        const labSun = gLabels.querySelector(`[data-id="L_sun_h_${i}"]`);
+        const labWind = gLabels.querySelector(`[data-id="L_wind_h_${i}"]`);
+        const labOut = gLabels.querySelector(`[data-id="L_h_out_${i}"]`);
+        if(labSun) labSun.textContent = `w=${fmt(S.w_in[i][0])}`;
+        if(labWind) labWind.textContent = `w=${fmt(S.w_in[i][1])}`;
+        if(labOut) labOut.textContent = `w=${fmt(S.w_out[i])}`;
+      }
+
+      // Tiny flow animation
+      const ys = S._ys || [];
+      for(const y of ys){
+        spawnParticle(layout.xIn+22, layout.yInTop, layout.xH-30, y);
+        spawnParticle(layout.xIn+22, layout.yInBot, layout.xH-30, y);
+        spawnParticle(layout.xH+30, y, layout.xOut-30, layout.yOut);
+      }
+    }
+
+    // Click explanations
+    function explainNode(id){
+      const last = S._last || forward(S.sun, S.wind);
+      if(id === "in_sun"){
+        showModal({
+          title:"Input A: Sun intensity",
+          sub:"Raw site parameter",
+          bodyHtml:`<strong>What it is</strong><br/>A number. The network has no physics baked in. It learns patterns from your labeled examples.<br/><br/><strong>Where it goes</strong><br/>Sun is multiplied by a different weight for each critic.`,
+          stat1:`Live value: ${fmt1(S.sun)}`,
+          stat2:"Interpretation: parameter",
+          analogy:"A parametric slider, like driving a façade system from solar exposure."
+        });
+        return;
+      }
+      if(id === "in_wind"){
+        showModal({
+          title:"Input B: Wind exposure",
+          sub:"Raw site parameter",
+          bodyHtml:`<strong>What it is</strong><br/>A number. If your labels say wind cools, training will make wind influence negative for shading urgency.<br/><br/><strong>Key insight</strong><br/>Labels define meaning. The network follows the rubric you encode.`,
+          stat1:`Live value: ${fmt1(S.wind)}`,
+          stat2:"Interpretation: parameter",
+          analogy:"A site condition input, like wind pressure and cross ventilation potential."
+        });
+        return;
+      }
+      if(id === "out"){
+        showModal({
+          title:"Output: Shading urgency",
+          sub:"Final verdict from 0 to 1",
+          bodyHtml:`<strong>What it does</strong><br/>Blends critic activations using output weights, adds output bias, then applies a gate to keep the value between 0 and 1.<br/><br/><strong>How to teach it</strong><br/>Treat it as a design pressure, not a command.`,
+          stat1:`Live output: ${fmt(last.y)}`,
+          stat2:`Interpretation: ${loudness01(last.y)}`,
+          analogy:"A jury chair who turns many opinions into one verdict."
+        });
+        return;
+      }
+      if(id.startsWith("h_")){
+        const i = parseInt(id.split("_")[1], 10);
+        showModal({
+          title:`Hidden neuron: Critic ${i+1}`,
+          sub:"Weighted mix plus bias, then an activation gate",
+          bodyHtml:`<strong>What it does</strong><br/>Combines sun and wind with its own priorities, then compresses that into one opinion (0 to 1).<br/><br/><strong>Why it matters</strong><br/>Hidden critics can form intermediate concepts, like “heat stress,” without you naming them.`,
+          stat1:`z=${fmt(last.zH[i])} | a=${fmt(last.aH[i])}`,
+          stat2:`Interpretation: ${loudness01(last.aH[i])}`,
+          analogy:"A critic who turns a messy brief into one strong stance."
+        });
+        return;
+      }
+    }
+
+    function explainLink(id){
+      if(id.startsWith("L_sun_h_")){
+        const i = parseInt(id.split("_").pop(), 10);
+        const w = S.w_in[i][0];
+        showModal({
+          title:`Weight: Sun → Critic ${i+1}`,
+          sub:"A learnable priority knob",
+          bodyHtml:`<strong>Meaning</strong><br/>Positive weight means more sun pushes the critic upward. Negative means it pushes downward.<br/><br/><strong>Training</strong><br/>If your examples reward shading under high sun, training increases this weight.`,
+          stat1:`w=${fmt(w)}`,
+          stat2:`Interpretation: ${w>=0?"positive":"negative"} influence`,
+          analogy:"A rubric slider: “how much does sun matter to this critic?”"
+        });
+        return;
+      }
+      if(id.startsWith("L_wind_h_")){
+        const i = parseInt(id.split("_").pop(), 10);
+        const w = S.w_in[i][1];
+        showModal({
+          title:`Weight: Wind → Critic ${i+1}`,
+          sub:"A learnable priority knob",
+          bodyHtml:`<strong>Meaning</strong><br/>Negative weight often matches “wind cools.” Positive weight means wind increases urgency in your dataset.<br/><br/><strong>Reality check</strong><br/>If the dataset is biased, the model learns biased rules.`,
+          stat1:`w=${fmt(w)}`,
+          stat2:`Interpretation: ${w>=0?"positive":"negative"} influence`,
+          analogy:"A rubric slider: “how much does wind matter to this critic?”"
+        });
+        return;
+      }
+      if(id.startsWith("L_h_out_")){
+        const i = parseInt(id.split("_").pop(), 10);
+        const w = S.w_out[i];
+        showModal({
+          title:`Weight: Critic ${i+1} → Output`,
+          sub:"How much the verdict listens to that critic",
+          bodyHtml:`<strong>Meaning</strong><br/>This is the microphone level for that critic in the final jury. Negative means the critic pushes the verdict down.<br/><br/><strong>Training</strong><br/>If a critic is helpful, training increases its influence.`,
+          stat1:`w=${fmt(w)}`,
+          stat2:`Interpretation: ${Math.abs(w)<0.3?"quiet mic":(Math.abs(w)<0.9?"normal mic":"loud mic")}`,
+          analogy:"A jury mic dial on the desk."
+        });
+        return;
+      }
+    }
+
+    svg.addEventListener("click", (e)=>{
+      const n = e.target.closest(".node");
+      if(n){ explainNode(n.getAttribute("data-id")); return; }
+      const l = e.target.closest(".link");
+      if(l){ explainLink(l.getAttribute("data-id")); return; }
+      const t = e.target.closest(".label");
+      if(t){ explainLink(t.getAttribute("data-id")); return; }
+    });
+
+    // Tabs
+    
+    function setTab(which){
+      $("tabExplain").classList.toggle("active", which==="explain");
+      $("tabTrain").classList.toggle("active", which==="train");
+      $("tabRAG").classList.toggle("active", which==="rag");
+      $("paneExplain").classList.toggle("active", which==="explain");
+      $("paneTrain").classList.toggle("active", which==="train");
+      $("paneRAG").classList.toggle("active", which==="rag");
+    }
+    $("tabExplain").addEventListener("click", ()=>setTab("explain"));
+    $("tabTrain").addEventListener("click", ()=>setTab("train"));
+    $("tabRAG").addEventListener("click", ()=>setTab("rag"));
+
+    // -----------------------------
+    // RAG LAB (in-browser, no backend)
+    // -----------------------------
+    let ragChunks = [];      // {id, source, text}
+    let ragVocab = [];       // array of tokens
+    let ragIdf = new Map();  // token -> idf
+    let ragVecs = [];        // per-chunk sparse vector: Map(token, weight)
+    let ragLastRetrieved = []; // [{chunk, score}]
+
+    const stop = new Set(("a an the and or but if then else of to in on for with without into from at by is are was were be been being as that this these those it its their your our you we they them can could should would may might will just very more most less not no yes").split(" "));
+
+    function normToken(t){
+      return t.toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+    }
+    function tokenize(text){
+      const s = normToken(text);
+      if (!s) return [];
+      return s.split(/\s+/).filter(w=>w && w.length>1 && !stop.has(w));
+    }
+    function chunkText(source, text){
+      // chunk by paragraphs, then soft-wrap long paragraphs
+      const paras = text.split(/\n\s*\n/).map(p=>p.trim()).filter(Boolean);
+      const out = [];
+      for (const p of paras){
+        if (p.length <= 420){ out.push(p); continue; }
+        let i = 0;
+        while (i < p.length){
+          out.push(p.slice(i, i+420));
+          i += 420;
+        }
+      }
+      return out.map((t, idx)=>({source, text:t}));
+    }
+    function parseSources(raw){
+      const blocks = raw.split(/\n\s*---\s*\n/g).map(b=>b.trim()).filter(Boolean);
+      const sources = [];
+      for (const b of blocks){
+        const m = b.match(/^SOURCE\s*:\s*(.+?)\n([\s\S]*)$/i);
+        if (m){
+          sources.push({source:m[1].trim(), text:(m[2]||"").trim()});
+        } else {
+          // fallback: treat first line as source
+          const lines = b.split(/\n/);
+          const src = (lines[0]||"Untitled").trim();
+          const txt = lines.slice(1).join("\n").trim();
+          sources.push({source:src || "Untitled", text:txt});
+        }
+      }
+      return sources.filter(s=>s.text.length>0);
+    }
+
+    function buildRagIndex(){
+      const raw = $("ragDocs").value || "";
+      const sources = parseSources(raw);
+      ragChunks = [];
+      let id = 0;
+      for (const s of sources){
+        const cs = chunkText(s.source, s.text);
+        for (const c of cs){
+          ragChunks.push({id:id++, source:c.source, text:c.text});
+        }
+      }
+      // build DF
+      const df = new Map();
+      const chunkTokens = [];
+      for (const ch of ragChunks){
+        const toks = tokenize(ch.text);
+        chunkTokens.push(toks);
+        const seen = new Set(toks);
+        for (const t of seen) df.set(t, (df.get(t)||0)+1);
+      }
+      const N = Math.max(1, ragChunks.length);
+      ragVocab = Array.from(df.keys()).sort();
+      ragIdf = new Map();
+      for (const [t, d] of df.entries()){
+        const idf = Math.log((N+1)/(d+1)) + 1;
+        ragIdf.set(t, idf);
+      }
+      // build vectors
+      ragVecs = [];
+      for (let i=0;i<ragChunks.length;i++){
+        const toks = chunkTokens[i];
+        const tf = new Map();
+        for (const t of toks) tf.set(t, (tf.get(t)||0)+1);
+        const vec = new Map();
+        for (const [t, c] of tf.entries()){
+          vec.set(t, (c / toks.length) * (ragIdf.get(t)||1));
+        }
+        ragVecs.push(vec);
+      }
+      $("ragChunkCount").textContent = String(ragChunks.length);
+      $("ragVocabSize").textContent = String(ragVocab.length);
+      ragLastRetrieved = [];
+      renderRagResults([]);
+      renderRagAnswer("");
+    }
+
+    function vecNorm(vec){
+      let s=0;
+      for (const v of vec.values()) s += v*v;
+      return Math.sqrt(s);
+    }
+    function dot(a,b){
+      // iterate smaller map
+      let s=0;
+      const [small, big] = (a.size<b.size)?[a,b]:[b,a];
+      for (const [t,v] of small.entries()){
+        const w = big.get(t);
+        if (w) s += v*w;
+      }
+      return s;
+    }
+    function makeQueryVec(q){
+      const toks = tokenize(q);
+      const tf = new Map();
+      for (const t of toks) tf.set(t,(tf.get(t)||0)+1);
+      const vec = new Map();
+      for (const [t,c] of tf.entries()){
+        vec.set(t, (c / toks.length) * (ragIdf.get(t)|| (Math.log(2)+1)));
+      }
+      return vec;
+    }
+
+    function retrieveTopK(q, k){
+      if (!ragChunks.length) return [];
+      const qv = makeQueryVec(q);
+      const qn = vecNorm(qv) || 1e-9;
+      const scores = [];
+      for (let i=0;i<ragChunks.length;i++){
+        const dv = ragVecs[i];
+        const dn = vecNorm(dv) || 1e-9;
+        const sim = dot(qv, dv) / (qn*dn);
+        scores.push({i, sim});
+      }
+      scores.sort((a,b)=>b.sim-a.sim);
+      return scores.slice(0, k).map(s=>({chunk: ragChunks[s.i], score: s.sim}));
+    }
+
+    function esc(s){
+      return (s||"").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;");
+    }
+    function renderRagResults(items){
+      const el = $("ragResults");
+      if (!items || items.length===0){
+        el.innerHTML = '<div style="color:var(--muted); font-size:12px;">No retrieval yet. Build a library, type a query, then click Retrieve.</div>';
+        return;
+      }
+      el.innerHTML = items.map((it, idx)=>{
+        const preview = it.chunk.text.length>260 ? it.chunk.text.slice(0,260)+"…" : it.chunk.text;
+        return `
+          <div class="chunkCard">
+            <div class="meta">
+              <div class="src"><strong>${esc(it.chunk.source)}</strong></div>
+              <div class="score">sim ${it.score.toFixed(3)}</div>
+            </div>
+            <div class="txt">${esc(preview)}</div>
+          </div>
+        `;
+      }).join("");
+    }
+    function renderRagAnswer(htmlStr){
+      $("ragAnswer").innerHTML = htmlStr || '<div style="color:var(--muted); font-size:12px;">Retrieved chunks will be used to build a grounded answer with citations.</div>';
+    }
+
+    function groundedAnswer(q, retrieved, mode){
+      const strict = $("ragStrict").checked;
+      const best = retrieved && retrieved[0] ? retrieved[0].score : 0;
+      if (!retrieved || retrieved.length===0 || (strict && best < 0.08)){
+        return `<div class="callout"><h3>Insufficient evidence</h3><p style="margin:0;">The library does not contain enough relevant material to answer this <em>from sources</em>. Add better references, then retrieve again.</p></div>`;
+      }
+
+      const cite = (src)=>`<span class="pill">${esc(src)}</span>`;
+      const citedBits = retrieved.map(r=>{
+        const t = r.chunk.text.trim();
+        const short = t.length>260 ? t.slice(0,260)+"…" : t;
+        return {src:r.chunk.source, text:short};
+      });
+
+      if (mode==="critique"){
+        // studio-ish structure
+        const strengths = [];
+        const risks = [];
+        const next = [];
+        // naive keyword cues
+        const qlow = (q||"").toLowerCase();
+        if (qlow.includes("west")) risks.push("West facades are brutal in late afternoon. Expect glare and heat spikes. Use external shading and limit high-SHGC glazing.");
+        if (qlow.includes("wind")) risks.push("Wind exposure can punish operable shading. Favour robust, maintainable assemblies and detail for rattle, uplift, and maintenance access.");
+        strengths.push("Ground the strategy in orientation and climate logic, then test with quick simulations or rules-of-thumb before overfitting the form.");
+        next.push("Run a quick sun-path and shadow study for worst-case dates and times, then iterate shading depth and spacing.");
+        next.push("Check thermal comfort targets and daylight glare risks for key occupied hours, not annual averages.");
+        next.push("Translate the concept into buildable details: fixings, drainage, cleaning access, and realistic tolerances.");
+
+        const citeLine = citedBits.map(b=>cite(b.src)).slice(0,4).join(" ");
+        return `
+          <div class="callout"><h3>Studio critique (grounded)</h3>
+            <p style="margin:0 0 10px 0; color:var(--muted);">Based on retrieved references: ${citeLine}</p>
+            <div style="font-size:12px; line-height:1.45;">
+              <strong>Strengths</strong>
+              <ul style="margin:6px 0 10px 18px;">
+                ${strengths.map(s=>`<li>${esc(s)}</li>`).join("")}
+              </ul>
+              <strong>Risks and trade-offs</strong>
+              <ul style="margin:6px 0 10px 18px;">
+                ${risks.map(s=>`<li>${esc(s)}</li>`).join("")}
+              </ul>
+              <strong>Next tests</strong>
+              <ul style="margin:6px 0 0 18px;">
+                ${next.map(s=>`<li>${esc(s)}</li>`).join("")}
+              </ul>
+            </div>
+          </div>
+          <div class="callout" style="margin-top:10px;"><h3>Evidence snippets</h3>
+            ${citedBits.map(b=>`<p style="margin:0 0 8px 0;"><strong>${esc(b.src)}</strong>: ${esc(b.text)}</p>`).join("")}
+          </div>
+        `;
+      }
+
+      // default answer mode
+      const bullets = [];
+      bullets.push("Start with orientation logic. Prioritise solar control on the hottest and most exposed elevations, then balance daylight and glare.");
+      bullets.push("Use external shading first. It is more effective than internal blinds for reducing heat gain and glare.");
+      bullets.push("Treat wind as a detailing problem. Choose shading devices and fixings that handle uplift, vibration, and maintenance.");
+      bullets.push("Validate quickly. Do a sun-path and a shadow study for peak conditions, then refine with a simple daylight or energy check.");
+
+      const cites = Array.from(new Set(retrieved.map(r=>r.chunk.source))).slice(0,5);
+
+      return `
+        <div class="callout"><h3>Grounded answer</h3>
+          <p style="margin:0 0 10px 0; color:var(--muted);">Query: <strong style="color:var(--ink);">${esc(q)}</strong></p>
+          <ul style="margin:0 0 10px 18px; font-size:12px; line-height:1.45;">
+            ${bullets.map(b=>`<li>${esc(b)}</li>`).join("")}
+          </ul>
+          <div style="display:flex; flex-wrap:wrap; gap:6px;">
+            ${cites.map(c=>`<span class="pill">${esc(c)}</span>`).join("")}
+          </div>
+        </div>
+        <div class="callout" style="margin-top:10px;"><h3>Evidence snippets</h3>
+          ${citedBits.map(b=>`<p style="margin:0 0 8px 0;"><strong>${esc(b.src)}</strong>: ${esc(b.text)}</p>`).join("")}
+        </div>
+      `;
+    }
+
+    function ragRetrieve(){
+      const q = $("ragQuery").value.trim();
+      const k = parseInt($("ragTopK").value,10);
+      if (!q){
+        renderRagResults([]);
+        renderRagAnswer('<div class="callout"><h3>No query</h3><p style="margin:0;">Type a question first, then retrieve.</p></div>');
+        return;
+      }
+      if (!ragChunks.length){
+        renderRagResults([]);
+        renderRagAnswer('<div class="callout"><h3>No library</h3><p style="margin:0;">Build the library first (or load the demo library).</p></div>');
+        return;
+      }
+      ragLastRetrieved = retrieveTopK(q, k);
+      renderRagResults(ragLastRetrieved);
+      renderRagAnswer("");
+    }
+
+    function ragLoadDemo(){
+      const demo = [
+`SOURCE: Climate notes (Pretoria)
+Pretoria has hot summers with strong solar load, especially in late afternoon. West-facing glazing can drive overheating and glare. Winter is typically dry with cooler nights, so diurnal swings matter.`,
+`SOURCE: Orientation and shading (studio notes)
+External shading is generally more effective than internal blinds for reducing solar gains. Horizontal shading works well for high sun angles (north in southern hemisphere). Vertical fins can help with low-angle sun (east and west).`,
+`SOURCE: Buildability and maintenance (detailing notes)
+Shading devices must be detailed for wind uplift, vibration, corrosion, and cleaning access. Overly delicate fins fail fast. Prefer robust sections, clear fixing logic, and safe maintenance routes.`,
+`SOURCE: Thermal comfort quick checks
+Use a basic comfort target and check peak hours, not only annual averages. Combine shading, ventilation strategy, and glazing selection to reduce discomfort risk.`,
+      ].join("\n---\n");
+      $("ragDocs").value = demo;
+      buildRagIndex();
+    }
+
+    $("ragTopK").addEventListener("input", ()=> $("ragTopKVal").textContent = $("ragTopK").value );
+    $("btnRagDemo").addEventListener("click", ragLoadDemo);
+    $("btnRagBuild").addEventListener("click", buildRagIndex);
+    $("btnRagClear").addEventListener("click", ()=>{
+      $("ragDocs").value = "";
+      ragChunks = []; ragVocab=[]; ragIdf=new Map(); ragVecs=[]; ragLastRetrieved=[];
+      $("ragChunkCount").textContent = "0";
+      $("ragVocabSize").textContent = "0";
+      renderRagResults([]);
+      renderRagAnswer("");
+    });
+    $("btnRagRetrieve").addEventListener("click", ragRetrieve);
+    $("btnRagAnswer").addEventListener("click", ()=>{
+      const q = $("ragQuery").value.trim();
+      const html = groundedAnswer(q, ragLastRetrieved, "answer");
+      renderRagAnswer(html);
+    });
+    $("btnRagCritique").addEventListener("click", ()=>{
+      const q = $("ragQuery").value.trim();
+      const html = groundedAnswer(q, ragLastRetrieved, "critique");
+      renderRagAnswer(html);
+    });
+
+    // Data
+    const defaultCSV = [
+      "9,1,0.95","8,2,0.90","8,6,0.60","7,8,0.45",
+      "6,1,0.75","5,3,0.55","5,8,0.30","4,9,0.22",
+      "3,2,0.32","3,7,0.18","2,9,0.10","1,4,0.10"
+    ].join("\\n");
+
+    function ruleTarget(sun, wind){
+      const z = 0.85*sun - 0.55*wind - 2.0;
+      return sigmoid(z);
+    }
+    function genRuleData(n){
+      const rows = [];
+      for(let i=0;i<n;i++){
+        const sun = Math.round(Math.random()*100)/10;
+        const wind = Math.round(Math.random()*100)/10;
+        const t = ruleTarget(sun, wind);
+        rows.push(`${sun},${wind},${(Math.round(t*100)/100).toFixed(2)}`);
+      }
+      return rows.join("\\n");
+    }
+    function parseCSV(text){
+      const lines = text.split(/\\r?\\n/).map(s=>s.trim()).filter(Boolean);
+      const data = [];
+      for(const line of lines){
+        const p = line.split(",").map(x=>x.trim());
+        if(p.length < 3) continue;
+        const sun = parseFloat(p[0]);
+        const wind = parseFloat(p[1]);
+        const target = parseFloat(p[2]);
+        if(!Number.isFinite(sun) || !Number.isFinite(wind) || !Number.isFinite(target)) continue;
+        data.push({sun, wind, target: clamp(target,0,1)});
+      }
+      return data;
+    }
+
+    // Training
+    const lossCanvas = $("lossCanvas");
+    const ctx = lossCanvas.getContext("2d");
+    let lossHistory = [];
+    let training = false;
+    let stopFlag = false;
+
+    function logLine(s){
+      $("log").textContent += s + "\\n";
+      $("log").scrollTop = $("log").scrollHeight;
+    }
+
+    function drawLoss(){
+      const W = lossCanvas.width, H = lossCanvas.height;
+      ctx.clearRect(0,0,W,H);
+
+      ctx.strokeStyle = "rgba(124,246,255,0.10)";
+      ctx.lineWidth = 1;
+      for(let x=0;x<=W;x+=64){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+      for(let y=0;y<=H;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+      if(lossHistory.length < 2) return;
+
+      const maxL = Math.max(...lossHistory);
+      const minL = Math.min(...lossHistory);
+      const span = Math.max(1e-6, maxL - minL);
+
+      ctx.strokeStyle = "rgba(184,255,124,0.85)";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for(let i=0;i<lossHistory.length;i++){
+        const x = (i/(lossHistory.length-1))*(W-24) + 12;
+        const y = H - ((lossHistory[i]-minL)/span)*(H-24) - 12;
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+
+      ctx.fillStyle = "rgba(231,236,255,0.70)";
+      ctx.font = "12px ui-sans-serif, system-ui";
+      ctx.fillText(`loss: ${fmt(lossHistory[lossHistory.length-1])}`, 12, 18);
+    }
+
+    function shuffleInPlace(arr){
+      for(let i=arr.length-1;i>0;i--){
+        const j = Math.floor(Math.random()*(i+1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+    }
+
+    function trainEpoch(data, lr){
+      const gw_in = Array.from({length:S.hiddenN}, ()=>[0,0]);
+      const gb_h = new Array(S.hiddenN).fill(0);
+      const gw_out = new Array(S.hiddenN).fill(0);
+      let gb_out = 0;
+
+      let loss = 0;
+
+      for(const ex of data){
+        const f = forward(ex.sun, ex.wind);
+        const y = f.y;
+        const t = ex.target;
+        const e = y - t;
+        loss += e*e;
+
+        // Backprop (MSE)
+        const deltaO = e * (y*(1-y));
+
+        for(let i=0;i<S.hiddenN;i++) gw_out[i] += f.aH[i]*deltaO;
+        gb_out += deltaO;
+
+        for(let i=0;i<S.hiddenN;i++){
+          const ai = f.aH[i];
+          const deltaH = (S.w_out[i]*deltaO) * (ai*(1-ai));
+          gw_in[i][0] += ex.sun*deltaH;
+          gw_in[i][1] += ex.wind*deltaH;
+          gb_h[i] += deltaH;
+        }
+      }
+
+      const n = data.length || 1;
+      loss = loss / n;
+
+      for(let i=0;i<S.hiddenN;i++){
+        S.w_in[i][0] -= lr*(gw_in[i][0]/n);
+        S.w_in[i][1] -= lr*(gw_in[i][1]/n);
+        S.b_h[i]     -= lr*(gb_h[i]/n);
+        S.w_out[i]   -= lr*(gw_out[i]/n);
+      }
+      S.b_out -= lr*(gb_out/n);
+
+      return loss;
+    }
+
+    function maybeAutoGrow(){
+      if(!S.autoGrow) return false;
+      if(S.hiddenN >= S.maxN) return false;
+      if(lossHistory.length < 120) return false;
+
+      const win = 40;
+      const recent = lossHistory.slice(-win);
+      const prev = lossHistory.slice(-2*win, -win);
+      const mean = (arr)=>arr.reduce((a,b)=>a+b,0)/arr.length;
+      const imp = mean(prev) - mean(recent);
+
+      if(imp < 0.0005 && mean(recent) > 0.01){
+        if(addCritic()){
+          $("hiddenN").value = S.hiddenN;
+          $("hiddenNVal").textContent = String(S.hiddenN);
+          buildDiagram();
+          logLine(`Auto-grow: plateau detected. Added critic. Critics now: ${S.hiddenN}`);
+          return true;
+        }
+      }
+      return false;
+    }
+
+    async function train(){
+      if(training) return;
+      if(!S.data.length){
+        logLine("No data loaded. Paste CSV and click Load data first.");
+        setTab("train");
+        return;
+      }
+
+      training = true;
+      stopFlag = false;
+      $("btnTrain").disabled = true;
+      $("btnStop").disabled = false;
+
+      lossHistory = [];
+      drawLoss();
+
+      const data = S.data.slice();
+      logLine(`Training started: epochs=${S.epochs}, lr=${fmt(S.lr)}, critics=${S.hiddenN}, autoGrow=${S.autoGrow?"on":"off"}`);
+
+      for(let ep=1; ep<=S.epochs; ep++){
+        if(stopFlag) break;
+
+        if(S.shuffle) shuffleInPlace(data);
+        const loss = trainEpoch(data, S.lr);
+        lossHistory.push(loss);
+
+        if(ep===1 || ep%5===0 || ep===S.epochs){
+          $("lossNow").textContent = fmt(loss);
+          drawLoss();
+          render();
+          await new Promise(r=>setTimeout(r, 0));
+        }
+
+        if(ep%20===0){
+          if(maybeAutoGrow()){
+            buildWeightsUI();
+            render();
+          }
+        }
+      }
+
+      const finalLoss = lossHistory.length ? lossHistory[lossHistory.length-1] : NaN;
+      logLine(stopFlag ? `Training stopped. Loss=${Number.isFinite(finalLoss)?fmt(finalLoss):"-"}` :
+                         `Training finished. Loss=${Number.isFinite(finalLoss)?fmt(finalLoss):"-"}`);
+
+      training = false;
+      $("btnTrain").disabled = false;
+      $("btnStop").disabled = true;
+      render();
+    }
+
+    // Render
+    function render(){
+      $("sunVal").textContent = fmt1(S.sun);
+      $("windVal").textContent = fmt1(S.wind);
+
+      $("hiddenNVal").textContent = String(S.hiddenN);
+      $("maxNVal").textContent = String(S.maxN);
+
+      const last = forward(S.sun, S.wind);
+      S._last = last;
+
+      $("pillOut").textContent = `Shading urgency ${fmt(last.y)}`;
+      $("meterFill").style.width = (clamp(last.y,0,1)*100).toFixed(1) + "%";
+      $("meterText").textContent = fmt(last.y);
+
+      $("nData").textContent = String(S.data.length);
+      $("nCrit").textContent = String(S.hiddenN);
+
+      updateDiagram(last);
+      buildWeightsUI();
+    }
+
+    // Wire UI
+    $("sun").addEventListener("input", ()=>{ S.sun = parseFloat($("sun").value); render(); });
+    $("wind").addEventListener("input", ()=>{ S.wind = parseFloat($("wind").value); render(); });
+
+    function setInputs(sun, wind){
+      S.sun = sun; S.wind = wind;
+      $("sun").value = sun; $("wind").value = wind;
+      render();
+    }
+    $("btnHotCalm").addEventListener("click", ()=>setInputs(9.0, 1.0));
+    $("btnMildWindy").addEventListener("click", ()=>setInputs(5.0, 8.5));
+    $("btnCoolWindy").addEventListener("click", ()=>setInputs(2.0, 9.0));
+    $("btnResetInputs").addEventListener("click", ()=>setInputs(8.0, 3.0));
+
+    $("hiddenN").addEventListener("input", ()=>{
+      const target = parseInt($("hiddenN").value, 10);
+      while(S.hiddenN < target){ if(!addCritic()) break; }
+      while(S.hiddenN > target){ if(!removeCritic()) break; }
+      buildDiagram();
+      render();
+    });
+
+    $("autoGrow").addEventListener("change", ()=>{ S.autoGrow = $("autoGrow").checked; });
+    $("maxN").addEventListener("input", ()=>{ S.maxN = parseInt($("maxN").value, 10); render(); });
+
+    $("btnAdd").addEventListener("click", ()=>{
+      if(addCritic()){
+        $("hiddenN").value = S.hiddenN;
+        buildDiagram();
+        logLine(`+ Added critic manually. Critics now: ${S.hiddenN}`);
+        render();
+      } else {
+        logLine(`Cannot add critic. Max critics is ${S.maxN}.`);
+      }
+    });
+
+    $("btnRemove").addEventListener("click", ()=>{
+      if(removeCritic()){
+        $("hiddenN").value = S.hiddenN;
+        buildDiagram();
+        logLine(`- Removed critic manually. Critics now: ${S.hiddenN}`);
+        render();
+      } else {
+        logLine("Cannot remove critic. Minimum is 1.");
+      }
+    });
+
+    $("btnRandom").addEventListener("click", ()=>{
+      randomizeWeights();
+      logLine("Randomized weights and biases.");
+      buildDiagram();
+      render();
+    });
+
+    $("btnPreset").addEventListener("click", ()=>{
+      teachingPreset();
+      logLine("Loaded teaching preset.");
+      buildDiagram();
+      render();
+    });
+
+    $("lr").addEventListener("input", ()=>{ S.lr = parseFloat($("lr").value); $("lrVal").textContent = fmt(S.lr); });
+    $("epochs").addEventListener("input", ()=>{ S.epochs = parseInt($("epochs").value, 10); $("epochsVal").textContent = String(S.epochs); });
+    $("shuffle").addEventListener("change", ()=>{ S.shuffle = $("shuffle").checked; });
+
+    $("btnTrain").addEventListener("click", train);
+    $("btnStop").addEventListener("click", ()=>{ if(training){ stopFlag = true; logLine("Stop requested."); } });
+
+    $("btnResetW").addEventListener("click", ()=>{
+      initWeights();
+      logLine("Reset weights to starting values.");
+      buildDiagram();
+      render();
+    });
+
+    $("btnDefault").addEventListener("click", ()=>{
+      $("dataText").value = defaultCSV;
+      logLine("Loaded default dataset text.");
+    });
+
+    $("btnRule").addEventListener("click", ()=>{
+      $("dataText").value = genRuleData(60);
+      logLine("Generated synthetic dataset from a simple teacher rule.");
+    });
+
+    $("btnClear").addEventListener("click", ()=>{
+      $("dataText").value = "";
+      S.data = [];
+      $("lossNow").textContent = "-";
+      logLine("Cleared dataset.");
+      render();
+    });
+
+    $("btnLoadData").addEventListener("click", ()=>{
+      S.data = parseCSV($("dataText").value);
+      const L = mse(S.data);
+      $("lossNow").textContent = Number.isFinite(L) ? fmt(L) : "-";
+      logLine(`Loaded ${S.data.length} examples.`);
+      if(!S.data.length) logLine("No valid lines found. Use: sun, wind, target. Target should be between 0 and 1.");
+      render();
+    });
+
+    // Boot
+    $("dataText").value = defaultCSV;
+    $("lrVal").textContent = fmt(S.lr);
+    $("epochsVal").textContent = String(S.epochs);
+    $("hiddenNVal").textContent = String(S.hiddenN);
+    $("maxNVal").textContent = String(S.maxN);
+
+    buildDiagram();
+    buildWeightsUI();
+    render();
+
+    logLine("Ready.");
+    logLine("Train flow: open Train tab, click Load data, then Train.");
+    logLine("Teaching move: set hidden critics to 1, disable auto-grow, train, watch plateau. Then enable auto-grow and retrain.");
+  </script>
+</body>
+</html>

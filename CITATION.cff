@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it."
+title: "Tiny Neural Network Studio"
+version: "4.0.0"
+date-released: "2026-02-07"
+url: "https://p4303997-arch.github.io/tiny_neural_network_studio/"
+repository-code: "https://github.com/p4303997-arch/tiny_neural_network_studio"
+authors:
+  - family-names: "Pienaar"
+    given-names: "Leon"
+license: "MIT"
+keywords:
+  - "neural networks"
+  - "architectural education"
+  - "built environment"
+  - "visualisation"
+  - "training"
